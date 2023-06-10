@@ -5,34 +5,33 @@ import (
 	"time"
 
 	"github.com/H3Cki/TrendTrader/geometry"
-	"github.com/H3Cki/TrendTrader/logger"
 	"github.com/H3Cki/TrendTrader/trade"
 	"github.com/H3Cki/TrendTrader/trade/binance"
 )
 
 func main() {
-	ex := &binance.Exchange{}
-	pf := trade.NewPlotFollower(ex)
+	trader := trade.OrderFollower{
+		Exchange:       &binance.Exchange{},
+		FollowedOrders: []*trade.FollowedOrder{},
+	}
 
-	fr := trade.FollowRequest{
+	fr := &trade.FollowedOrderRequest{
 		Symbol:        "BTCTEST",
-		Interval:      "1s",
+		Interval:      time.Second,
 		Side:          "buy",
 		BaseQuantity:  10.0,
 		QuoteQuantity: 0.0,
-		Plot:          geometry.NewOffsetPlot(geometry.NewLine(geometry.Point{}, geometry.Point{}), geometry.NewAbsoluteOffset(10)),
+		Plot:          geometry.NewOffsetPlot(geometry.NewLine(geometry.Point{Date: time.Now(), Price: 1}, geometry.Point{Date: time.Now().Add(10 * time.Second), Price: 10}), geometry.NewAbsoluteOffset(0)),
 	}
 
-	_, err := pf.Follow(fr)
+	fo, err := trader.CreateFollowedOrder(fr)
 	if err != nil {
-		logger.Fatal(err)
-
+		panic(err)
 	}
 
 	for {
-		time.Sleep(time.Second)
-		fmt.Println(pf.Follows()[0].OrderID)
-	}
+		time.Sleep(fr.Interval + 1)
 
-	select {}
+		fmt.Printf("%+v\n", fo.Order)
+	}
 }
