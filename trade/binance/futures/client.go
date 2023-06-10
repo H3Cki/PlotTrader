@@ -1,0 +1,3 @@
+package futures
+
+func xd() {}

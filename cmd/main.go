@@ -34,4 +34,9 @@ func main() {
 
 		fmt.Printf("%+v\n", fo.Order)
 	}
+
+	// ex := spot.NewClient(spot.Credentials{})
+	// fol := trade.OrderFollower{
+	// 	Exchange: ex,
+	// }
 }

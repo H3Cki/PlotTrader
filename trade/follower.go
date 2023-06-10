@@ -13,7 +13,7 @@ type Exchange interface {
 	OrderPending(id any) (bool, error)
 	GetOrder(id any) (*Order, error)
 	CancelOrder(id any) error
-	CreateOrder(*OrderRequest) (*Order, error)
+	CreateOrder(OrderRequest) (*Order, error)
 }
 
 // Order is used to store details of an order created by an exchange.
@@ -31,7 +31,7 @@ type Order struct {
 	QuoteQty float64
 
 	Leverage      float64
-	TimeInForce   float64
+	TimeInForce   string
 	StopPrice     float64
 	TrailingDelta float64
 }
@@ -47,7 +47,7 @@ type OrderRequest struct {
 	QuoteQty float64
 
 	Leverage      float64
-	TimeInForce   float64
+	TimeInForce   string
 	StopPrice     float64
 	TrailingDelta float64
 }
@@ -75,6 +75,15 @@ func (o *OrderRequest) BaseQuantity() float64 {
 	}
 
 	return o.QuoteQty / o.Price
+}
+
+// QuoteQuantity is a utility function that will calculate the base quantity in case only quote quantity was provided
+func (o *OrderRequest) QuoteQuantity() float64 {
+	if o.QuoteQty != 0 {
+		return o.QuoteQty
+	}
+
+	return o.BaseQty * o.Price
 }
 
 // FollowedOrderRequest is used to create an order and then follow it on a given plot.
@@ -107,7 +116,7 @@ type OrderFollower struct {
 func (of *OrderFollower) CreateFollowedOrder(foReq *FollowedOrderRequest) (*FollowedOrder, error) {
 	follower := geometry.NewPlotFollower(foReq.Plot, foReq.Interval)
 
-	order, err := of.Exchange.CreateOrder(&OrderRequest{
+	order, err := of.Exchange.CreateOrder(OrderRequest{
 		Symbol:   foReq.Symbol,
 		Side:     foReq.Side,
 		BaseQty:  foReq.BaseQuantity,
@@ -204,7 +213,7 @@ func (of *OrderFollower) followOrder(order *Order, updateC chan geometry.FollowU
 			return fmt.Errorf("unable to cancel order %v: %w", order.ID, err)
 		}
 
-		newOrder, err := of.Exchange.CreateOrder(&OrderRequest{
+		newOrder, err := of.Exchange.CreateOrder(OrderRequest{
 			Symbol:   order.Symbol,
 			Side:     order.Side,
 			BaseQty:  order.BaseQty,
