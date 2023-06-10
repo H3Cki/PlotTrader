@@ -1,8 +1,8 @@
 package binance
 
 import (
-	"github.com/H3Cki/TrendTrader/logger"
-	"github.com/H3Cki/TrendTrader/trade"
+	"github.com/H3Cki/PlotTrader/logger"
+	"github.com/H3Cki/PlotTrader/trade"
 )
 
 var id = 0

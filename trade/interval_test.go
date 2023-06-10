@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/H3Cki/TrendTrader/trade"
+	"github.com/H3Cki/PlotTrader/trade"
 	"github.com/stretchr/testify/assert"
 )
 
