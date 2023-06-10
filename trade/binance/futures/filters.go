@@ -1,11 +1,12 @@
 package futures
 
 import (
-	"PlotTrader/trade/binance"
 	"errors"
 	"fmt"
 	"math"
 	"strconv"
+
+	"github.com/H3Cki/PlotTrader/trade/binance"
 
 	"github.com/H3Cki/TrendTrader/trade"
 	futuresSDK "github.com/adshao/go-binance/v2/futures"

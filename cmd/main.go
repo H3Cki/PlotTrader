@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/H3Cki/PlotTrader/trade/binance/spot"
 	"github.com/H3Cki/TrendTrader/geometry"
 	"github.com/H3Cki/TrendTrader/trade"
 	"github.com/H3Cki/TrendTrader/trade/binance"
@@ -35,8 +36,8 @@ func main() {
 		fmt.Printf("%+v\n", fo.Order)
 	}
 
-	// ex := spot.NewClient(spot.Credentials{})
-	// fol := trade.OrderFollower{
-	// 	Exchange: ex,
-	// }
+	ex := spot.NewClient(spot.Credentials{})
+	fol := trade.OrderFollower{
+		Exchange: ex,
+	}
 }

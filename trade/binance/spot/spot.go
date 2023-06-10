@@ -1,12 +1,13 @@
 package spot
 
 import (
-	"PlotTrader/logger"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/H3Cki/PlotTrader/logger"
 
 	"github.com/H3Cki/TrendTrader/trade"
 	binanceSDK "github.com/adshao/go-binance/v2"

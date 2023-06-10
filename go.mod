@@ -1,4 +1,4 @@
-module PlotTrader
+module github.com/H3Cki/PlotTrader
 
 go 1.20
 
