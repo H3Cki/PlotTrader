@@ -1,10 +1,10 @@
-package interval_test
+package trade_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/H3Cki/TrendTrader/interval"
+	"github.com/H3Cki/TrendTrader/trade"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +25,7 @@ func TestNextStart(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.now.String()+test.itv.String(), func(t *testing.T) {
-			next := interval.NextStart(test.now, test.itv)
+			next := trade.NextIntervalStart(test.now, test.itv)
 			assert.Equal(t, test.next, next)
 		})
 	}
@@ -50,7 +50,7 @@ func TestStart(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.now.String()+test.itv.String(), func(t *testing.T) {
-			next := interval.NextStart(test.now, test.itv)
+			next := trade.NextIntervalStart(test.now, test.itv)
 			assert.Equal(t, test.next, next)
 		})
 	}
