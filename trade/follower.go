@@ -2,6 +2,7 @@ package trade
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/H3Cki/PlotTrader/geometry"
@@ -88,13 +89,14 @@ func (o *OrderRequest) QuoteQuantity() float64 {
 
 // FollowedOrderRequest is used to create an order and then follow it on a given plot.
 type FollowedOrderRequest struct {
-	StartAt, StopAt time.Time
-	Symbol          string
-	Interval        time.Duration
-	Side            string
-	BaseQuantity    float64
-	QuoteQuantity   float64
-	Plot            geometry.Plot
+	StartAt, StopAt   time.Time // not used
+	CancelOrderOnExit bool      // not used
+	Symbol            string
+	Interval          time.Duration
+	Side              string
+	BaseQuantity      float64
+	QuoteQuantity     float64
+	Plot              geometry.Plot
 }
 
 // FollowerOrder aggregates Follow data and Order data
@@ -110,6 +112,7 @@ type FollowedOrder struct {
 type OrderFollower struct {
 	Exchange       Exchange
 	FollowedOrders []*FollowedOrder
+	mu             sync.Mutex
 }
 
 // CreateFollowedOrder creates an order on given exchange and then follows it
@@ -138,7 +141,9 @@ func (of *OrderFollower) CreateFollowedOrder(foReq *FollowedOrderRequest) (*Foll
 		follower:      follower,
 	}
 
+	of.mu.Lock()
 	of.FollowedOrders = append(of.FollowedOrders, fo)
+	of.mu.Unlock()
 
 	go func() {
 		err := of.followOrder(fo.Order, follower.TickerC())
@@ -169,7 +174,9 @@ func (of *OrderFollower) FollowOrder(orderID any, plot geometry.Plot, itv time.D
 		follower: follower,
 	}
 
+	of.mu.Lock()
 	of.FollowedOrders = append(of.FollowedOrders, fo)
+	of.mu.Unlock()
 
 	go func() {
 		if err := of.followOrder(fo.Order, follower.TickerC()); err != nil {
@@ -180,9 +187,11 @@ func (of *OrderFollower) FollowOrder(orderID any, plot geometry.Plot, itv time.D
 	return fo, nil
 }
 
-// CancelFollow stops following an order, if cancelOrder is true then it also cancels the order on the exchange
-func (of *OrderFollower) CancelFollow(followID string, cancelOrder bool) error {
-	//mutex
+// UnfollowOrder stops following an order, if cancelOrder is true then it also cancels the order on the exchange
+func (of *OrderFollower) UnfollowOrder(followID string, cancelOrder bool) error {
+	of.mu.Lock()
+	defer of.mu.Unlock()
+
 	for i, fo := range of.FollowedOrders {
 		if fo.FollowID == followID {
 			fo.follower.Stop()
@@ -225,6 +234,24 @@ func (of *OrderFollower) followOrder(order *Order, updateC chan geometry.FollowU
 		}
 
 		*order = *newOrder
+	}
+
+	return nil
+}
+
+func (of *OrderFollower) CancelAll(cancelOrder bool) error {
+	followIDs := []string{}
+
+	of.mu.Lock()
+	for _, f := range of.FollowedOrders {
+		followIDs = append(followIDs, f.FollowID)
+	}
+	of.mu.Unlock()
+
+	for _, fID := range followIDs {
+		if err := of.UnfollowOrder(fID, cancelOrder); err != nil {
+			return err
+		}
 	}
 
 	return nil

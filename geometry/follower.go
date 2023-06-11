@@ -11,24 +11,34 @@ type FollowUpdate struct {
 	Price     float64
 }
 
+type FollowerOption func(*Follower)
+
 type Follower struct {
 	tickerC chan FollowUpdate
+
+	startTime, stopTime time.Time
 
 	cron     *gocron.Scheduler
 	interval time.Duration
 	plot     Plot
 }
 
-func NewPlotFollower(plot Plot, itv time.Duration) *Follower {
+func NewPlotFollower(plot Plot, itv time.Duration, options ...FollowerOption) *Follower {
 	cron := gocron.NewScheduler(time.UTC)
 	cron.StartAsync()
 
-	return &Follower{
+	f := &Follower{
 		cron:     cron,
 		plot:     plot,
 		interval: itv,
 		tickerC:  make(chan FollowUpdate),
 	}
+
+	for _, opt := range options {
+		opt(f)
+	}
+
+	return f
 }
 
 func (pf *Follower) Start() error {
@@ -55,4 +65,16 @@ func (pf *Follower) PriceAt(t time.Time) float64 {
 func (pf *Follower) Stop() {
 	pf.cron.Stop()
 	close(pf.tickerC)
+}
+
+func WithStartTime(t time.Time) FollowerOption {
+	return func(f *Follower) {
+		f.startTime = t
+	}
+}
+
+func WithStopTime(t time.Time) FollowerOption {
+	return func(f *Follower) {
+		f.stopTime = t
+	}
 }
