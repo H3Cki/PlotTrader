@@ -25,7 +25,7 @@ jobs:
       - name: Tidy mod
         run: go mod tidy
       - name: Build
-        run: go build -v -o build_test ./cmd
+        run: go build -v -o build_test ./cmd/http
 
   test:
     runs-on: ubuntu-latest
