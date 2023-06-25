@@ -35,3 +35,19 @@ func gain(after, before float64) float64 {
 	v := (after - before) / before
 	return math.Round(v*prec) / prec
 }
+
+func baseQuantity(price, base, quote float64) float64 {
+	if base != 0 {
+		return base
+	}
+
+	return quote / price
+}
+
+func quoteQuantity(price, base, quote float64) float64 {
+	if quote != 0 {
+		return quote
+	}
+
+	return base * price
+}

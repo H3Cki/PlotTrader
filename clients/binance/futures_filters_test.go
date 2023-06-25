@@ -5,12 +5,11 @@ import (
 	"math"
 	"testing"
 
-	"github.com/H3Cki/PlotTrader/trade"
-	binanceSDK "github.com/adshao/go-binance/v2"
+	"github.com/adshao/go-binance/v2/futures"
 	"github.com/stretchr/testify/assert"
 )
 
-var ethbtc = `
+var fETHBTC = `
     {
 		"symbol": "BNBBTC",
 		"status": "TRADING",
@@ -80,105 +79,105 @@ var ethbtc = `
 		"permissions": ["SPOT"]
     }`
 
-func Test_applyFilters(t *testing.T) {
-	var symbolETHBTC binanceSDK.Symbol
+func Test_applyFuturesFilters(t *testing.T) {
+	var symbolfETHBTC futures.Symbol
 
-	if err := json.Unmarshal([]byte(ethbtc), &symbolETHBTC); err != nil {
+	if err := json.Unmarshal([]byte(fETHBTC), &symbolfETHBTC); err != nil {
 		t.Error(err)
 	}
 
 	type args struct {
-		s binanceSDK.Symbol
-		o trade.OrderRequest
+		s futures.Symbol
+		o FuturesOrderRequest
 	}
 
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
-		exRes   trade.OrderRequest
+		exRes   FuturesOrderRequest
 	}{
 		{
 			name: "1",
 			args: args{
-				s: symbolETHBTC,
-				o: trade.OrderRequest{
-					Type:    "limit",
-					Symbol:  "ETHBTC",
-					Price:   0.12345678912345,
-					BaseQty: 0.212345678912345,
+				s: symbolfETHBTC,
+				o: FuturesOrderRequest{
+					OrderType:    futures.OrderTypeLimit,
+					Symbol:       "fETHBTC",
+					price:        0.12345678912345,
+					BaseQuantity: 0.212345678912345,
 				},
 			},
 			wantErr: false,
-			exRes: trade.OrderRequest{
-				Type:    "limit",
-				Symbol:  "ETHBTC",
-				Price:   0.123457,
-				BaseQty: 0.21,
+			exRes: FuturesOrderRequest{
+				OrderType:    futures.OrderTypeLimit,
+				Symbol:       "fETHBTC",
+				price:        0.123457,
+				BaseQuantity: 0.21,
 			},
 		},
 		{
 			name: "quantity too small",
 			args: args{
-				s: symbolETHBTC,
-				o: trade.OrderRequest{
-					Type:    "limit",
-					Symbol:  "ETHBTC",
-					Price:   0.078794,
-					BaseQty: 0.0001,
+				s: symbolfETHBTC,
+				o: FuturesOrderRequest{
+					OrderType:    futures.OrderTypeLimit,
+					Symbol:       "fETHBTC",
+					price:        0.078794,
+					BaseQuantity: 0.0001,
 				},
 			},
 			wantErr: true,
-			exRes: trade.OrderRequest{
-				Type:    "limit",
-				Symbol:  "ETHBTC",
-				Price:   0.078794,
-				BaseQty: 0.0001,
+			exRes: FuturesOrderRequest{
+				OrderType:    futures.OrderTypeLimit,
+				Symbol:       "fETHBTC",
+				price:        0.078794,
+				BaseQuantity: 0.0001,
 			},
 		},
 		{
 			name: "quantity too big",
 			args: args{
-				s: symbolETHBTC,
-				o: trade.OrderRequest{
-					Type:    "limit",
-					Symbol:  "ETHBTC",
-					Price:   0.078794,
-					BaseQty: 0.0001,
+				s: symbolfETHBTC,
+				o: FuturesOrderRequest{
+					OrderType:    futures.OrderTypeLimit,
+					Symbol:       "fETHBTC",
+					price:        0.078794,
+					BaseQuantity: 0.0001,
 				},
 			},
 			wantErr: true,
-			exRes: trade.OrderRequest{
-				Type:    "limit",
-				Symbol:  "ETHBTC",
-				Price:   0.078794,
-				BaseQty: 100000.0,
+			exRes: FuturesOrderRequest{
+				OrderType:    futures.OrderTypeLimit,
+				Symbol:       "fETHBTC",
+				price:        0.078794,
+				BaseQuantity: 100000.0,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := applyFilters(tt.args.s, &tt.args.o)
+			err := applyFuturesFilters(tt.args.s, &tt.args.o)
 
 			assert.Equal(t, (err != nil), tt.wantErr)
 			if tt.wantErr {
 				return
 			}
-			assert.Equal(t, tt.exRes.Price, tt.args.o.Price)
-			assert.LessOrEqual(t, math.Abs(gain(tt.exRes.BaseQty, tt.args.o.BaseQty)), 0.001)
+			assert.Equal(t, tt.exRes.price, tt.args.o.price)
+			assert.LessOrEqual(t, math.Abs(gain(tt.exRes.BaseQuantity, tt.args.o.BaseQuantity)), 0.001)
 		})
 	}
 }
 
-func Test_priceFilter(t *testing.T) {
-	var symbolETHBTC binanceSDK.Symbol
+func Test_futuresPriceFilter(t *testing.T) {
+	var symbolfETHBTC futures.Symbol
 
-	if err := json.Unmarshal([]byte(ethbtc), &symbolETHBTC); err != nil {
+	if err := json.Unmarshal([]byte(fETHBTC), &symbolfETHBTC); err != nil {
 		t.Error(err)
 	}
 
-	pf := symbolETHBTC.PriceFilter()
+	pf := symbolfETHBTC.PriceFilter()
 
 	tests := []struct {
 		name    string
@@ -219,7 +218,7 @@ func Test_priceFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := priceFilter(pf, tt.price)
+			got, err := futuresPriceFilter(pf, tt.price)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("priceFilter() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -231,14 +230,14 @@ func Test_priceFilter(t *testing.T) {
 	}
 }
 
-func Test_lotSizeFilter(t *testing.T) {
-	var symbolETHBTC binanceSDK.Symbol
+func Test_futuresLotSizeFilter(t *testing.T) {
+	var symbolfETHBTC futures.Symbol
 
-	if err := json.Unmarshal([]byte(ethbtc), &symbolETHBTC); err != nil {
+	if err := json.Unmarshal([]byte(fETHBTC), &symbolfETHBTC); err != nil {
 		t.Error(err)
 	}
 
-	pf := symbolETHBTC.LotSizeFilter()
+	pf := symbolfETHBTC.LotSizeFilter()
 
 	tests := []struct {
 		name    string
@@ -267,7 +266,7 @@ func Test_lotSizeFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := lotSizeFilter(pf, tt.qty)
+			got, err := futuresLotSizeFilter(pf, tt.qty)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("lotSizeFilter() error = %v, wantErr %v", err, tt.wantErr)
 				return

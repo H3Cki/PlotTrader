@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/H3Cki/PlotTrader/geometry"
+	"github.com/H3Cki/Plotor/geometry"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAbsoluteOffset_Pad(t *testing.T) {
+func TestAbsoluteOffset_Offset(t *testing.T) {
 	tests := []struct {
 		pad, v, result float64
 	}{
@@ -25,7 +25,7 @@ func TestAbsoluteOffset_Pad(t *testing.T) {
 	}
 }
 
-func TestPercentageOffset_Pad(t *testing.T) {
+func TestPercentageOffset_Offset(t *testing.T) {
 	tests := []struct {
 		pad, v, result float64
 	}{
@@ -44,7 +44,7 @@ func TestPercentageOffset_Pad(t *testing.T) {
 func TestNewPercentageOffset(t *testing.T) {
 	e, _ := time.ParseDuration("4h")
 
-	now := time.Now().UTC()
+	now := time.Now()
 
 	dur := e.Seconds()
 	div := int64(float64(now.Unix()) / dur)

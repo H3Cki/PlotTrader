@@ -1,4 +1,4 @@
-package trade
+package plotor
 
 import "time"
 
@@ -14,10 +14,10 @@ var predefinedDurations = map[string]time.Duration{
 	"1M": 30 * 24 * time.Hour,
 }
 
-// ParseDuration adds more units on top of time.ParseDuration():
+// ParseInterval adds more units on top of time.ParseInterval():
 // 1d, 2d, 3d, 4d, 5d, 6d, 1w, 2w, 1M.
-// These units are added for convenience and cannot be combined e.g. ParseDuration("1d12h") or ParseDuration("1w1d") wont work.
-func ParseDuration(itv string) (time.Duration, error) {
+// These units are added for convenience and cannot be combined e.g. ParseInterval("1d12h") or ParseInterval("1w1d") wont work.
+func ParseInterval(itv string) (time.Duration, error) {
 	if d, ok := predefinedDurations[itv]; ok {
 		return d, nil
 	}

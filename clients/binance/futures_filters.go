@@ -6,48 +6,58 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/H3Cki/PlotTrader/trade"
-	futuresSDK "github.com/adshao/go-binance/v2/futures"
+	"github.com/adshao/go-binance/v2/futures"
 )
 
-func applyFuturesFilters(s futuresSDK.Symbol, o *trade.Order) error {
-	switch o.Type {
-	case "limit":
+var futuresOrderTypeFilters = map[futures.OrderType]func(futures.Symbol, *FuturesOrderRequest) error{
+	futures.OrderTypeLimit: func(s futures.Symbol, or *FuturesOrderRequest) error {
 		// PRICE
 		if pf := s.PriceFilter(); pf != nil {
-			price, err := futuresPriceFilter(pf, o.Price)
+			price, err := futuresPriceFilter(pf, or.price)
 			if err != nil {
 				return err
 			}
 
-			o.Price = price
+			or.price = price
 		}
 
 		// LOT SIZE
 		if lsf := s.LotSizeFilter(); lsf != nil {
-			qty, err := futuresLotSizeFilter(lsf, o.BaseQty)
+			qty, err := futuresLotSizeFilter(lsf, or.BaseQuantity)
 			if err != nil {
 				return err
 			}
 
-			o.BaseQty = qty
+			or.BaseQuantity = qty
 		}
 
 		// MIN NOTIONAL
 		if mnf := s.MinNotionalFilter(); mnf != nil {
-			err := futuresMinNotionalFilter(mnf, o.Price, o.BaseQty)
+			err := futuresMinNotionalFilter(mnf, or.price, or.BaseQuantity)
 			if err != nil {
 				return err
 			}
 		}
-	default:
-		return fmt.Errorf("usupported order type %s", o.Type)
-	}
 
-	return nil
+		return nil
+	},
 }
 
-func futuresPriceFilter(pf *futuresSDK.PriceFilter, price float64) (float64, error) {
+func applyFuturesFilters(s futures.Symbol, or *FuturesOrderRequest) error {
+	or.BaseQuantity = baseQuantity(or.price, or.BaseQuantity, or.QuoteQuantity)
+	or.QuoteQuantity = quoteQuantity(or.price, or.BaseQuantity, or.QuoteQuantity)
+
+	filterFunc, ok := futuresOrderTypeFilters[futures.OrderType(or.OrderType)]
+	if !ok {
+		return fmt.Errorf("unsupported order type: %v", or.OrderType)
+	}
+
+	return filterFunc(s, or)
+}
+
+// futuresPriceFilter returns a price adjusted for the tickSize for a given symbol,
+// returns an error if the price exceeds min or max value.
+func futuresPriceFilter(pf *futures.PriceFilter, price float64) (float64, error) {
 	tickSize, err := strconv.ParseFloat(pf.TickSize, 64)
 	if err != nil {
 		return 0, err
@@ -85,7 +95,7 @@ func futuresPriceFilter(pf *futuresSDK.PriceFilter, price float64) (float64, err
 	return newPrice, nil
 }
 
-func futuresLotSizeFilter(lsf *futuresSDK.LotSizeFilter, qty float64) (float64, error) {
+func futuresLotSizeFilter(lsf *futures.LotSizeFilter, qty float64) (float64, error) {
 	stepSize, err := strconv.ParseFloat(lsf.StepSize, 64)
 	if err != nil {
 		return 0, err
@@ -116,7 +126,7 @@ func futuresLotSizeFilter(lsf *futuresSDK.LotSizeFilter, qty float64) (float64, 
 	return newQty, nil
 }
 
-func futuresMinNotionalFilter(mnf *futuresSDK.MinNotionalFilter, price, qty float64) error {
+func futuresMinNotionalFilter(mnf *futures.MinNotionalFilter, price, qty float64) error {
 	if mnf.Notional == "" {
 		return nil
 	}

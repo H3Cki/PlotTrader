@@ -32,7 +32,7 @@ func (p *PercentageOffset) Offset(v float64) float64 {
 	return v + (v * p.Percentage)
 }
 
-// OffsetPlot wraps a Plot and applies an offset to Plot's returned value
+// OffsetPlot is a plot wrapper that allows it to be offset seamlesly
 type OffsetPlot struct {
 	Offsetter Offsetter
 	Plot      Plot
@@ -45,7 +45,11 @@ func NewOffsetPlot(plot Plot, offset Offsetter) *OffsetPlot {
 	}
 }
 
-func (o *OffsetPlot) At(t time.Time) float64 {
-	v := o.Plot.At(t)
-	return o.Offsetter.Offset(v)
+func (o *OffsetPlot) At(t time.Time) (float64, error) {
+	v, err := o.Plot.At(t)
+	if err != nil {
+		return 0, err
+	}
+
+	return o.Offsetter.Offset(v), nil
 }

@@ -6,58 +6,58 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/H3Cki/PlotTrader/trade"
 	binanceSDK "github.com/adshao/go-binance/v2"
 )
 
-func applyFilters(s binanceSDK.Symbol, o *trade.OrderRequest) error {
-	switch o.Type {
-	case "limit":
+var spotOrderTypeFilters = map[binanceSDK.OrderType]func(binanceSDK.Symbol, *SpotOrderRequest) error{
+	binanceSDK.OrderTypeLimit: func(s binanceSDK.Symbol, or *SpotOrderRequest) error {
 		// PRICE
 		if pf := s.PriceFilter(); pf != nil {
-			price, err := priceFilter(pf, o.Price)
+			price, err := spotPriceFilter(pf, or.price)
 			if err != nil {
 				return err
 			}
 
-			o.Price = price
-		}
-
-		// STOP PRICE
-		if pf := s.PriceFilter(); pf != nil {
-			price, err := priceFilter(pf, o.StopPrice)
-			if err != nil {
-				return err
-			}
-
-			o.Price = price
+			or.price = price
 		}
 
 		// LOT SIZE
 		if lsf := s.LotSizeFilter(); lsf != nil {
-			qty, err := lotSizeFilter(lsf, o.BaseQty)
+			qty, err := spotLotSizeFilter(lsf, or.BaseQuantity)
 			if err != nil {
 				return err
 			}
 
-			o.BaseQty = qty
+			or.BaseQuantity = qty
 		}
 
 		// MIN NOTIONAL
 		if mnf := s.MinNotionalFilter(); mnf != nil {
-			err := minNotionalFilter(mnf, o.Price, o.BaseQty)
+			err := spotMinNotionalFilter(mnf, or.price, or.BaseQuantity)
 			if err != nil {
 				return err
 			}
 		}
-	default:
-		return fmt.Errorf("usupported order type %s", o.Type)
-	}
 
-	return nil
+		return nil
+	},
 }
 
-func priceFilter(pf *binanceSDK.PriceFilter, price float64) (float64, error) {
+func applySpotFilters(s binanceSDK.Symbol, or *SpotOrderRequest) error {
+	or.BaseQuantity = baseQuantity(or.price, or.BaseQuantity, or.QuoteQuantity)
+	or.QuoteQuantity = quoteQuantity(or.price, or.BaseQuantity, or.QuoteQuantity)
+
+	filterFunc, ok := spotOrderTypeFilters[binanceSDK.OrderType(or.OrderType)]
+	if !ok {
+		return fmt.Errorf("unsupported order type: %v", or.OrderType)
+	}
+
+	return filterFunc(s, or)
+}
+
+// priceFilter returns a price adjusted for the tickSize for a given symbol,
+// returns an error if the price exceeds min or max value.
+func spotPriceFilter(pf *binanceSDK.PriceFilter, price float64) (float64, error) {
 	tickSize, err := strconv.ParseFloat(pf.TickSize, 64)
 	if err != nil {
 		return 0, err
@@ -95,7 +95,7 @@ func priceFilter(pf *binanceSDK.PriceFilter, price float64) (float64, error) {
 	return newPrice, nil
 }
 
-func lotSizeFilter(lsf *binanceSDK.LotSizeFilter, qty float64) (float64, error) {
+func spotLotSizeFilter(lsf *binanceSDK.LotSizeFilter, qty float64) (float64, error) {
 	stepSize, err := strconv.ParseFloat(lsf.StepSize, 64)
 	if err != nil {
 		return 0, err
@@ -126,7 +126,7 @@ func lotSizeFilter(lsf *binanceSDK.LotSizeFilter, qty float64) (float64, error) 
 	return newQty, nil
 }
 
-func minNotionalFilter(mnf *binanceSDK.NotionalFilter, price, qty float64) error {
+func spotMinNotionalFilter(mnf *binanceSDK.NotionalFilter, price, qty float64) error {
 	if mnf.MinNotional == "" {
 		return nil
 	}

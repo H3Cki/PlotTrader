@@ -1,10 +1,10 @@
-package trade_test
+package plotor_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/H3Cki/PlotTrader/trade"
+	"github.com/H3Cki/Plotor/plotor"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +31,7 @@ func TestNextStart(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.now.String()+test.itv.String(), func(t *testing.T) {
-			next := trade.NextIntervalStart(test.now, test.itv)
+			next := plotor.NextIntervalStart(test.now, test.itv)
 			assert.Equal(t, test.next, next)
 		})
 	}
@@ -58,7 +58,7 @@ func TestStart(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.now.String()+test.itv.String(), func(t *testing.T) {
-			next := trade.IntervalStart(test.now, test.itv)
+			next := plotor.IntervalStart(test.now, test.itv)
 			assert.Equal(t, test.start, next)
 		})
 	}
